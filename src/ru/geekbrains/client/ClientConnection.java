@@ -24,44 +24,46 @@ public class ClientConnection implements ServerConst, Server_API {
     }
     public void init(ChatWindow view){ //lazy init
         try{
-            this.socket = new Socket(SERVER_URL, PORT);
-            this.out = new DataOutputStream(socket.getOutputStream());
-            this.in = new DataInputStream(socket.getInputStream());
-            new Thread(()-> {
-                try{
-                    while(true){
-                        String message = in.readUTF();
-                        if(message.startsWith(AUTH_SUCCESSFUl)){
-                            setAuthrozied(true);
-                            view.switchWindows();
-                            break;
-                        }
-                        view.showMessage(message);
-                    }
-                    while(true){
-                        String message = in.readUTF();
-                        String[] elements = message.split(" ");
-                        if(message.startsWith(SYSTEM_SYMBOL)){
-                            if(elements[0].equals(CLOSE_CONNECTION)){
-                                setAuthrozied(false);
-                                view.showMessage(message.substring(CLOSE_CONNECTION.length() + 1));
+            if (this.socket == null) {
+                this.socket = new Socket(SERVER_URL, PORT);
+                this.out = new DataOutputStream(socket.getOutputStream());
+                this.in = new DataInputStream(socket.getInputStream());
+                new Thread(() -> {
+                    try {
+                        while (true) {
+                            String message = in.readUTF();
+                            if (message.startsWith(AUTH_SUCCESSFUl)) {
+                                setAuthrozied(true);
                                 view.switchWindows();
-                            }else if(message.startsWith(USERS_LIST)){
-                                String[] users = message.split(" ");
-                                Arrays.sort(users);
-                                System.out.println(Arrays.toString(users));
-                                view.showUsersList(users);
+                                break;
                             }
-
-                        }else{
                             view.showMessage(message);
                         }
+                        while (true) {
+                            String message = in.readUTF();
+                            String[] elements = message.split(" ");
+                            if (message.startsWith(SYSTEM_SYMBOL)) {
+                                if (elements[0].equals(CLOSE_CONNECTION)) {
+                                    setAuthrozied(false);
+                                    view.showMessage(message.substring(CLOSE_CONNECTION.length() + 1));
+                                    view.switchWindows();
+                                } else if (message.startsWith(USERS_LIST)) {
+                                    String[] users = message.split(" ");
+                                    Arrays.sort(users);
+                                    System.out.println(Arrays.toString(users));
+                                    view.showUsersList(users);
+                                }
+
+                            } else {
+                                view.showMessage(message);
+                            }
+                        }
+                    } catch (IOException e) {
+                    } finally {
+                        disconnect();
                     }
-                }catch(IOException e){
-                }finally{
-                    disconnect();
-                }
-            }).start();
+                }).start();
+            }
         }catch(IOException e){
             e.printStackTrace();
         }
@@ -77,6 +79,7 @@ public class ClientConnection implements ServerConst, Server_API {
     public void auth(String login, String password){
         try{
             out.writeUTF(AUTH + " " + login + " " + password);
+            out.flush();
         }catch(IOException e){
             e.printStackTrace();
         }
@@ -85,6 +88,7 @@ public class ClientConnection implements ServerConst, Server_API {
         try{
             out.writeUTF(CLOSE_CONNECTION);
             socket.close();
+            socket = null;
         }catch(IOException e){
             e.printStackTrace();
         }

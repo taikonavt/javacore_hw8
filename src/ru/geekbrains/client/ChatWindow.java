@@ -19,7 +19,6 @@ public class ChatWindow extends JFrame{
 
     public ChatWindow(){
         clientConnection = new ClientConnection();
-//        clientConnection.init(this);
 
         setTitle("Chat");
         setSize(400, 400);
